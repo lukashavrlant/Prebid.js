@@ -275,6 +275,40 @@ describe('stroeerssp adapter', function () {
       assert.deepEqual(bidRequest, expectedJson);
     });
 
+    it('sends all rendering params', function() {
+      bidderRequest.bids[0].params.rendering = {
+        xyz: 'foo',
+        bar: 1
+      };
+
+      fakeServer.respondWith(JSON.stringify(buildBidderResponse()));
+      adapter(win).callBids(bidderRequest);
+      fakeServer.respond();
+
+      assert.equal(fakeServer.requests.length, 1);
+
+      const actualRequest = JSON.parse(fakeServer.requests[0].requestBody);
+
+      assert.equal(actualRequest.bids.length, 2);
+
+      assert.isUndefined(actualRequest.bids[1].rnd);
+      assert.deepEqual(actualRequest.bids[0].rnd, {xyz: 'foo', bar: 1});
+    });
+
+    it('reject bids with invalid rendering value', function() {
+      bidderRequest.bids[0].params.rendering = 'foo';
+      bidderRequest.bids[1].params.rendering = 1234;
+
+      fakeServer.respondWith(JSON.stringify(buildBidderResponse()));
+      adapter(win).callBids(bidderRequest);
+      fakeServer.respond();
+
+      assert.equal(fakeServer.requests.length, 0);
+
+      assertNoFillBid(bidmanager.addBidResponse.firstCall.args[1], 'bid1');
+      assertNoFillBid(bidmanager.addBidResponse.secondCall.args[1], 'bid2');
+    });
+
     describe('Auction type (ssat) set (or not) in each individual bid', function() {
       it('test an auction with two valid and two non-valid auction types', function() {
         clock.tick(13500);

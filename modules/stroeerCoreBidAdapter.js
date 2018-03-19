@@ -62,6 +62,20 @@ const StroeerCoreAdapter = function (win = window) {
     return undefined;
   }
 
+  function extractOwnKeyValues(obj) {
+    if (obj) {
+      const params = {};
+
+      utils._each(obj, (v, k) => {
+        params[k] = v;
+      });
+
+      return params;
+    }
+
+    return undefined;
+  }
+
   function insertUserConnect(bids) {
     const scriptElement = win.document.createElement('script');
     const anyBidWithSlotId = bids[0];
@@ -191,6 +205,7 @@ const StroeerCoreAdapter = function (win = window) {
     filters.push(createFilter((bid) => utils.isStr(bid.params.sid), bid => `bid ${bid.bidId} does not have a sid string field`));
     filters.push(createFilter((bid) => ssat === null || (bid.params.ssat === ssat), bid => `bid ${bid.bidId} has auction type that is inconsistent with other bids (expected ${ssat})`));
     filters.push(createFilter((bid) => bid.params.ssat === undefined || [1, 2].includes(bid.params.ssat), bid => `bid ${bid.bidId} does not have a valid ssat value (must be 1 or 2)`));
+    filters.push(createFilter((bid) => bid.params.rendering === undefined || typeof bid.params.rendering === 'object', bid => `bid ${bid.bidId} rendering params must be an object if provided`));
 
     return filters;
   }
@@ -225,7 +240,8 @@ const StroeerCoreAdapter = function (win = window) {
           bid: bidRequest.bidId,
           sid: bidRequest.params.sid,
           siz: bidRequest.sizes,
-          viz: elementInView(bidRequest.placementCode)
+          viz: elementInView(bidRequest.placementCode),
+          rnd: extractOwnKeyValues(bidRequest.params.rendering)
         });
         validBidRequestById[bidRequest.bidId] = bidRequest;
       });
