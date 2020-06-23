@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+      var adUnits = [
+        {
+          "code": "div-123-abc",
+          "bids": [
+            {
+              "params": {
+                "ssat": 1,
+                "yl2": false,
+                "host": "hba.lsd.test",
+                "connectjsurl": "//js.lsd.test/userconnect.js",
+                "sid": "39000",
+                "path": "/dsh"
+              },
+              "bidder": "stroeerCore"
+            }
+          ],
+          "mediaTypes": {
+            "banner": {
+              "sizes": [
+                [
+                  800,
+                  250
+                ],
+                [
+                  770,
+                  250
+                ],
+                [
+                  468,
+                  60
+                ],
+                [
+                  234,
+                  60
+                ],
+                [
+                  728,
+                  90
+                ]
+              ]
+            }
+          }
+        }
+      ]
+
+
+      var pbjs = pbjs || {};
+      pbjs.que = pbjs.que || [];
+
+      pbjs.que.push(function () {
+        pbjs.setConfig({
+          bidderTimeout: 20000,
+          priceGranularity: "auto"
+        });
+      });
+
+    </script>
+
+    <script src="/build/dev/prebid.js" async></script>
+
+    <script>
+      pbjs.que.push(function () {
+        pbjs.addAdUnits(adUnits);
+        pbjs.requestBids({
+          bidsBackHandler: bidsBackHandlerFn
+        });
+      });
+
+      function bidsBackHandlerFn(_, __, auctionId) {
+        if (pbjs.adserverRequestSent) return;
+        pbjs.adserverRequestSent = true;
+
+        pbjs.que.push(function () {
+          pbjs.directRender(auctionId);
+        });
+      }
+    </script>
+</head>
+
+<body>
+<h2>Direct Rendering Local Test</h2>
+<div id='xyz'>
+</div>
+</body>
+
+</html>

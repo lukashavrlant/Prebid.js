@@ -888,4 +888,32 @@ $$PREBID_GLOBAL$$.processQueue = function() {
   processQueue($$PREBID_GLOBAL$$.cmd);
 };
 
+$$PREBID_GLOBAL$$.directRender = function(auctionId) {
+  // Only interested in adUnits that participated in auctionId regardless if there were bid responses or not.
+  const requests = auctionManager.getBidsRequested().filter(bidRequest => bidRequest.auctionId === auctionId);
+  const adUnitCodes = requests.map(request => request.bids).reduce(flatten).map(bid => bid.adUnitCode).filter(uniques);
+
+  const allTargeting = targeting.getAllTargeting(adUnitCodes);
+
+  adUnitCodes.forEach(adUnitCode => {
+    const targeting = allTargeting[adUnitCode];
+    const adId = targeting[CONSTANTS.TARGETING_KEYS.AD_ID];
+
+    const iframe = utils.createInvisibleIframe();
+    iframe.style.overflow = 'hidden';
+    iframe.style.display = 'inline';
+
+    const containerId = 'xyz'; // TODO
+
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.insertBefore(iframe, null);
+
+      $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
+
+      // Can optionally sandbox the iframe before the javascript in it executes (SafeFrame)
+      iframe.sandbox = 'allow-scripts';
+    }
+  });
+}
 export default $$PREBID_GLOBAL$$;
