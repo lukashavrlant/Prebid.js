@@ -910,9 +910,6 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
       container.insertBefore(iframe, null);
 
       $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
-
-      // Can optionally sandbox the iframe before the javascript in it executes (SafeFrame)
-      iframe.sandbox = 'allow-scripts';
     }
   });
 }
