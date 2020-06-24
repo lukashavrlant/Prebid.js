@@ -895,7 +895,7 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
 
   const allTargeting = targeting.getAllTargeting(adUnitCodes);
 
-  adUnitCodes.forEach(adUnitCode => {
+  const insertAdvert = (container, adUnitCode) => {
     const targeting = allTargeting[adUnitCode];
     const adId = targeting[CONSTANTS.TARGETING_KEYS.AD_ID];
 
@@ -903,13 +903,48 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
     iframe.style.overflow = 'hidden';
     iframe.style.display = 'inline';
 
-    const containerId = 'xyz'; // TODO
+    container.insertBefore(iframe, null);
+    $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
+  }
 
-    const container = document.getElementById(containerId);
-    if (container) {
-      container.insertBefore(iframe, null);
+  const retrieveContainer = (slot) => {
+    let container = slot.getContainer();
+    if (!container) {
+      const containerId = slot.getContainerId();
+      container = containerId ? document.getElementById(containerId) : null;
+    }
+    return container;
+  }
 
-      $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
+  const insertAdvertLater = (adUnitCode) => {
+    const MESSAGE_NAME = 'metaTagSystemSlotContainerAvailable';
+    function listener (event) {
+      const slot = event.detail['passedObject'];
+      if (!slot.getContainer()) {
+        return;
+      }
+      if (slot.getName() === adUnitCode) {
+        const container = retrieveContainer(slot);
+        if (container) {
+          insertAdvert(container, adUnitCode);
+        }
+        window.removeEventListener(MESSAGE_NAME, listener);
+      }
+    }
+    window.addEventListener(MESSAGE_NAME, listener);
+  }
+
+  adUnitCodes.forEach(adUnitCode => {
+    const slot = window.SDG.getCN().getSlotByPosition(adUnitCode);
+    if (slot) {
+      const container = retrieveContainer(slot);
+
+      if (container) {
+        insertAdvert(container, adUnitCode);
+      }
+      else {
+        insertAdvertLater(adUnitCode);
+      }
     }
   });
 }

@@ -2,9 +2,18 @@
 <html>
 <head>
     <script>
+      var delayContainer = true;
+      function appendContainer(id) {
+        var el = document.createElement('div');
+        el.id = id;
+        document.body.appendChild(el);
+      }
+    </script>
+
+    <script>
       var adUnits = [
         {
-          "code": "div-123-abc",
+          "code": "sky",
           "bids": [
             {
               "params": {
@@ -53,38 +62,99 @@
 
       pbjs.que.push(function () {
         pbjs.setConfig({
-          bidderTimeout: 20000,
+          bidderTimeout: 5000,
           priceGranularity: "auto"
         });
       });
 
     </script>
 
+    <script>
+        // Mock metatag.js. To fiddle around with while dev testing.
+
+        var Slot = function (name, id) {
+          var container = document.getElementById(id);
+
+          this.getContainer = function () {
+            return container;
+          }
+          this.getContainerId = function() {
+            return id;
+          }
+          this.getName = function() {
+            return name;
+          }
+
+          var that = this;
+          var intervalId = setInterval(function() {
+            container = document.getElementById(id);
+            if (container) {
+              var event = new CustomEvent('metaTagSystemSlotContainerAvailable', {
+                detail: {
+                  passedObject: that
+                }
+              });
+              window.dispatchEvent(event);
+              clearInterval(intervalId);
+            }
+          }, 6000);
+        }
+
+        var fakeSlot = new Slot('sky', 'xyz');
+
+        var SDG = {
+          getCN: function() {
+            return {
+              getSlotByPosition: function(name) {
+                return name === 'sky' ? fakeSlot : null;
+              }
+            }
+          }
+        }
+    </script>
+
+
     <script src="/build/dev/prebid.js" async></script>
 
     <script>
-      pbjs.que.push(function () {
-        pbjs.addAdUnits(adUnits);
-        pbjs.requestBids({
-          bidsBackHandler: bidsBackHandlerFn
-        });
-      });
-
-      function bidsBackHandlerFn(_, __, auctionId) {
-        if (pbjs.adserverRequestSent) return;
-        pbjs.adserverRequestSent = true;
-
+      function kickoff() {
         pbjs.que.push(function () {
-          pbjs.directRender(auctionId);
+          pbjs.addAdUnits(adUnits);
+          pbjs.requestBids({
+            bidsBackHandler: bidsBackHandlerFn
+          });
         });
+
+        function bidsBackHandlerFn(_, __, auctionId) {
+          if (pbjs.adserverRequestSent) return;
+          pbjs.adserverRequestSent = true;
+
+          pbjs.que.push(function () {
+            pbjs.directRender(auctionId);
+
+            // Adding container here to test delayed container
+            if (delayContainer) {
+              appendContainer('xyz');
+            }
+          });
+        }
       }
     </script>
 </head>
 
 <body>
 <h2>Direct Rendering Local Test</h2>
-<div id='xyz'>
-</div>
+
+<script>
+    kickoff();
+</script>
+
+<script>
+    if (!delayContainer) {
+      appendContainer('xyz');
+    }
+</script>
+
 </body>
 
 </html>
