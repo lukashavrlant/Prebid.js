@@ -955,7 +955,7 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
       const container = slot.getAdServerNode();
 
       if (container) {
-        insertAdvert(container, adUnitCode, slot);
+        insertAdvert(container, adUnitCode, slot, adId);
       }
       else {
         insertAdvertLater(adUnitCode, adId);

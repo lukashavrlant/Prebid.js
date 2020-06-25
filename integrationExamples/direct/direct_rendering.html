@@ -19,10 +19,10 @@
               "params": {
                 "ssat": 1,
                 "yl2": false,
-                "host": "hba.lsd.test",
+                "host": "localhost:8305",
                 "connectjsurl": "//js.lsd.test/userconnect.js",
                 "sid": "39000",
-                "path": "/dsh"
+                "path": "/hba"
               },
               "bidder": "stroeerCore"
             }
@@ -105,8 +105,6 @@
           }, 6000);
         }
 
-        var fakeSlot = new Slot('sky', 'xyz');
-
         var SDG = {
           getCN: function() {
             return {
@@ -158,6 +156,7 @@
     if (!delayContainer) {
       appendContainer('xyz');
     }
+    var fakeSlot = new Slot('sky', 'xyz');
 </script>
 
 </body>
