@@ -2,7 +2,7 @@
 <html>
 <head>
     <script>
-      var delayContainer = true;
+      var delayContainer = false;
       function appendContainer(id) {
         var el = document.createElement('div');
         el.id = id;
@@ -63,7 +63,8 @@
       pbjs.que.push(function () {
         pbjs.setConfig({
           bidderTimeout: 5000,
-          priceGranularity: "auto"
+          priceGranularity: "auto",
+          debug: true
         });
       });
 
@@ -72,20 +73,24 @@
     <script>
         // Mock metatag.js. To fiddle around with while dev testing.
 
+        var slotLifecycleMethods = ["sendPlacementCallingEvent", "loadProcessResponded", "updatePlacementParameters", "loadProcessRenderedResponse", "sendPlacementEmptyEvent", "loadProcessDone"];
+
         var Slot = function (name, id) {
+          var that = this;
           var container = document.getElementById(id);
 
-          this.getContainer = function () {
+          this.getAdServerNode = function () {
             return container;
           }
-          this.getContainerId = function() {
-            return id;
-          }
+
           this.getName = function() {
             return name;
           }
 
-          var that = this;
+          slotLifecycleMethods.forEach(function(methodName) {
+            that[methodName] = function(){}
+          })
+
           var intervalId = setInterval(function() {
             container = document.getElementById(id);
             if (container) {

@@ -895,38 +895,37 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
 
   const allTargeting = targeting.getAllTargeting(adUnitCodes);
 
-  const insertAdvert = (container, adUnitCode) => {
-    const targeting = allTargeting[adUnitCode];
-    const adId = targeting[CONSTANTS.TARGETING_KEYS.AD_ID];
-
+  const insertAdvert = (container, adUnitCode, slot, adId) => {
     const iframe = utils.createInvisibleIframe();
     iframe.style.overflow = 'hidden';
     iframe.style.display = 'inline';
 
     container.insertBefore(iframe, null);
+
+    iframe.addEventListener('load', () => {
+      slot.loadProcessDone();
+    });
+
     $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
+
+    slot.updatePlacementParameters({foo: 'bar'});
+
+    slot.frameWindow = iframe.contentWindow;
+
+    slot.loadProcessRenderedResponse();
   }
 
-  const retrieveContainer = (slot) => {
-    let container = slot.getContainer();
-    if (!container) {
-      const containerId = slot.getContainerId();
-      container = containerId ? document.getElementById(containerId) : null;
-    }
-    return container;
-  }
-
-  const insertAdvertLater = (adUnitCode) => {
+  const insertAdvertLater = (adUnitCode, adId) => {
     const MESSAGE_NAME = 'metaTagSystemSlotContainerAvailable';
     function listener (event) {
       const slot = event.detail['passedObject'];
-      if (!slot.getContainer()) {
+      if (!slot.getAdServerNode) {
         return;
       }
       if (slot.getName() === adUnitCode) {
-        const container = retrieveContainer(slot);
+        const container = slot.getAdServerNode();
         if (container) {
-          insertAdvert(container, adUnitCode);
+          insertAdvert(container, adUnitCode, slot, adId);
         }
         window.removeEventListener(MESSAGE_NAME, listener);
       }
@@ -936,14 +935,30 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
 
   adUnitCodes.forEach(adUnitCode => {
     const slot = window.SDG.getCN().getSlotByPosition(adUnitCode);
+
     if (slot) {
-      const container = retrieveContainer(slot);
+      const targeting = allTargeting[adUnitCode];
+      const adId = targeting[CONSTANTS.TARGETING_KEYS.AD_ID];
+
+      if (!adId) {
+        // No advert (E.g., due to timeout)
+        slot.sendPlacementEmptyEvent();
+        slot.loadProcessDone();
+        console.log("no advert");
+        return;
+      }
+      console.log("advert found");
+
+      slot.sendPlacementCallingEvent();
+      slot.loadProcessResponded();
+
+      const container = slot.getAdServerNode();
 
       if (container) {
-        insertAdvert(container, adUnitCode);
+        insertAdvert(container, adUnitCode, slot);
       }
       else {
-        insertAdvertLater(adUnitCode);
+        insertAdvertLater(adUnitCode, adId);
       }
     }
   });
