@@ -19,6 +19,7 @@
               "params": {
                 "ssat": 1,
                 "yl2": false,
+
                 "host": "localhost:8305",
                 "connectjsurl": "//js.lsd.test/userconnect.js",
                 "sid": "39000",
@@ -73,7 +74,7 @@
     <script>
         // Mock metatag.js. To fiddle around with while dev testing.
 
-        var slotLifecycleMethods = ["sendPlacementCallingEvent", "loadProcessResponded", "updatePlacementParameters", "loadProcessRenderedResponse", "sendPlacementEmptyEvent", "loadProcessDone"];
+        var slotLifecycleMethods = ["sendPlacementCallingEvent", "loadProcessResponded", "updatePlacementParameters", "loadProcessRenderedResponse", "sendPlacementEmptyEvent", "loadProcessDone", "setIdsForSystem", "setFlag"];
 
         var Slot = function (name, id) {
           var that = this;
@@ -128,12 +129,12 @@
           });
         });
 
-        function bidsBackHandlerFn(_, __, auctionId) {
+        function bidsBackHandlerFn(bids, timeout, auctionId) {
           if (pbjs.adserverRequestSent) return;
           pbjs.adserverRequestSent = true;
 
           pbjs.que.push(function () {
-            pbjs.directRender(auctionId);
+            pbjs.directRender(bids, auctionId);
 
             // Adding container here to test delayed container
             if (delayContainer) {

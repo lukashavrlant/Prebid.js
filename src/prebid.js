@@ -15,6 +15,8 @@ import { isRendererRequired, executeRenderer } from './Renderer.js';
 import { createBid } from './bidfactory.js';
 import { storageCallbacks } from './storageManager.js';
 
+import find from 'core-js-pure/features/array/find.js';
+
 const $$PREBID_GLOBAL$$ = getGlobal();
 const CONSTANTS = require('./constants.json');
 const utils = require('./utils.js');
@@ -888,14 +890,14 @@ $$PREBID_GLOBAL$$.processQueue = function() {
   processQueue($$PREBID_GLOBAL$$.cmd);
 };
 
-$$PREBID_GLOBAL$$.directRender = function(auctionId) {
+$$PREBID_GLOBAL$$.directRender = function(bidsByAdUnitCode, auctionId) {
   // Only interested in adUnits that participated in auctionId regardless if there were bid responses or not.
   const requests = auctionManager.getBidsRequested().filter(bidRequest => bidRequest.auctionId === auctionId);
   const adUnitCodes = requests.map(request => request.bids).reduce(flatten).map(bid => bid.adUnitCode).filter(uniques);
 
   const allTargeting = targeting.getAllTargeting(adUnitCodes);
 
-  const insertAdvert = (container, adUnitCode, slot, adId) => {
+  const insertAdvert = (container, slot, bid) => {
     const iframe = utils.createInvisibleIframe();
     iframe.style.overflow = 'hidden';
     iframe.style.display = 'inline';
@@ -906,26 +908,40 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
       slot.loadProcessDone();
     });
 
-    $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, adId);
+    $$PREBID_GLOBAL$$.renderAd(iframe.contentDocument, bid.adId);
 
-    slot.updatePlacementParameters({foo: 'bar'});
+    slot.setFlag('preBidRenderedAd', true);
+
+    // Achieves the same thing as the setIdsForSystem function.
+    slot.updatePlacementParameters({
+      "meetrics": {
+        "sizeId": bid.getSize(),
+        "sspVendor": bid.bidderCode,
+      },
+      "adserver": {
+        "lastSsp": bid.bidderCode,
+        "realSize": bid.getSize(),
+        "preBidAuctionId": bid.auctionId,
+        "preBidAdId": bid.adId
+      }
+    });
 
     slot.frameWindow = iframe.contentWindow;
 
     slot.loadProcessRenderedResponse();
   }
 
-  const insertAdvertLater = (adUnitCode, adId) => {
+  const insertAdvertLater = (bid) => {
     const MESSAGE_NAME = 'metaTagSystemSlotContainerAvailable';
     function listener (event) {
       const slot = event.detail['passedObject'];
       if (!slot.getAdServerNode) {
         return;
       }
-      if (slot.getName() === adUnitCode) {
+      if (slot.getName() === bid.adUnitCode) {
         const container = slot.getAdServerNode();
         if (container) {
-          insertAdvert(container, adUnitCode, slot, adId);
+          insertAdvert(container, slot, bid);
         }
         window.removeEventListener(MESSAGE_NAME, listener);
       }
@@ -940,14 +956,15 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
       const targeting = allTargeting[adUnitCode];
       const adId = targeting[CONSTANTS.TARGETING_KEYS.AD_ID];
 
-      if (!adId) {
+      const winningBid = find(bidsByAdUnitCode[adUnitCode].bids, bid => bid.adId === adId);
+      // const winningBid = bidsByAdUnitCode[adUnitCode].bids.filter(bid => bid.adId === adId)[0];
+
+      if (!winningBid) {
         // No advert (E.g., due to timeout)
         slot.sendPlacementEmptyEvent();
         slot.loadProcessDone();
-        console.log("no advert");
         return;
       }
-      console.log("advert found");
 
       slot.sendPlacementCallingEvent();
       slot.loadProcessResponded();
@@ -955,10 +972,10 @@ $$PREBID_GLOBAL$$.directRender = function(auctionId) {
       const container = slot.getAdServerNode();
 
       if (container) {
-        insertAdvert(container, adUnitCode, slot, adId);
+        insertAdvert(container, slot, winningBid);
       }
       else {
-        insertAdvertLater(adUnitCode, adId);
+        insertAdvertLater(winningBid);
       }
     }
   });
