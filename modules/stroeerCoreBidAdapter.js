@@ -1,6 +1,6 @@
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {ajax} from '../src/ajax.js';
-import {BANNER} from '../src/mediaTypes.js';
+import {BANNER, VIDEO} from '../src/mediaTypes.js';
 import * as utils from '../src/utils.js';
 
 // Do not import POLYFILLS from core-js. Most likely until next major update (v4).
@@ -121,7 +121,7 @@ function initUserConnect() {
 
 export const spec = {
   code: BIDDER_CODE,
-  supportedMediaTypes: [BANNER],
+  supportedMediaTypes: [BANNER, VIDEO],
 
   isBidRequestValid: (function () {
     const validators = [];
@@ -131,7 +131,7 @@ export const spec = {
         if (checkFn(bidRequest)) {
           return true;
         } else {
-          utils.logError(`invalid bid: ${errorMsgFn(bidRequest)}`, 'ERROR');
+          utils.logError(`invalid bid in ${BIDDER_CODE}: ${errorMsgFn(bidRequest)}`, 'WARN');
           return false;
         }
       }
@@ -143,8 +143,17 @@ export const spec = {
         bidReq.mediaType === BANNER;
     }
 
-    validators.push(createValidator((bidReq) => isBanner(bidReq),
-      bidReq => `bid request ${bidReq.bidId} is not a banner`));
+    function isOutstreamVideo(bidReq) {
+      const mediaTypes = bidReq.mediaTypes;
+      return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'outstream';
+    }
+
+    function isValidMediaType(bidReq) {
+      return isBanner(bidReq) || isOutstreamVideo(bidReq);
+    }
+
+    validators.push(createValidator((bidReq) => isValidMediaType(bidReq),
+      bidReq => `bid request ${bidReq.bidId} does not have a valid media type`));
     validators.push(createValidator((bidReq) => typeof bidReq.params === 'object',
       bidReq => `bid request ${bidReq.bidId} does not have custom params`));
     validators.push(createValidator((bidReq) => utils.isStr(bidReq.params.sid),

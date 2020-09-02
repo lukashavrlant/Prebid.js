@@ -311,7 +311,7 @@ describe('stroeerCore bid adapter', function () {
   });
 
   it('should only support BANNER mediaType', function () {
-    assert.deepEqual(spec.supportedMediaTypes, [BANNER]);
+    assert.deepEqual(spec.supportedMediaTypes, [BANNER, VIDEO]);
   });
 
   describe('bid validation entry point', () => {
@@ -354,16 +354,37 @@ describe('stroeerCore bid adapter', function () {
       assert.isFalse(spec.isBidRequestValid(bidRequest));
     });
 
-    it('should exclude non-banner bids', () => {
+    it('should allow outstream video bids', () => {
       delete bidRequest.mediaTypes.banner;
       bidRequest.mediaTypes.video = {
-        playerSize: [640, 480]
+        playerSize: [640, 480],
+        context: 'outstream'
+      };
+
+      assert.isTrue(spec.isBidRequestValid(bidRequest));
+    });
+
+    it('should exclude instream video bids', () => {
+      delete bidRequest.mediaTypes.banner;
+      bidRequest.mediaTypes.video = {
+        playerSize: [640, 480],
+        context: 'instream'
       };
 
       assert.isFalse(spec.isBidRequestValid(bidRequest));
     });
 
-    it('should exclude non-banner, pre-version 3 bids', () => {
+    it('should exclude video bids without context', () => {
+      delete bidRequest.mediaTypes.banner;
+      bidRequest.mediaTypes.video = {
+        playerSize: [640, 480],
+        context: undefined
+      };
+
+      assert.isFalse(spec.isBidRequestValid(bidRequest));
+    });
+
+    it('should exclude video, pre-version 3 bids', () => {
       delete bidRequest.mediaTypes;
       bidRequest.mediaType = VIDEO;
       assert.isFalse(spec.isBidRequestValid(bidRequest));
