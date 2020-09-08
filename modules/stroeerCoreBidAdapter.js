@@ -119,13 +119,13 @@ function initUserConnect() {
   utils.insertElement(scriptElement);
 }
 
-function isBanner(bidReq) {
+function hasBanner(bidReq) {
   return (!bidReq.mediaTypes && !bidReq.mediaType) ||
     (bidReq.mediaTypes && bidReq.mediaTypes.banner) ||
     bidReq.mediaType === BANNER;
 }
 
-function isInstreamVideo(bidReq) {
+function hasInstreamVideo(bidReq) {
   const mediaTypes = bidReq.mediaTypes;
   return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'instream';
 }
@@ -148,11 +148,11 @@ export const spec = {
       }
     };
 
-    function isValidMediaType(bidReq) {
-      return isBanner(bidReq) || isInstreamVideo(bidReq);
+    function hasValidMediaType(bidReq) {
+      return hasBanner(bidReq) || hasInstreamVideo(bidReq);
     }
 
-    validators.push(createValidator((bidReq) => isValidMediaType(bidReq),
+    validators.push(createValidator((bidReq) => hasValidMediaType(bidReq),
       bidReq => `bid request ${bidReq.bidId} does not have a valid media type`));
     validators.push(createValidator((bidReq) => typeof bidReq.params === 'object',
       bidReq => `bid request ${bidReq.bidId} does not have custom params`));
@@ -207,7 +207,7 @@ export const spec = {
     }
 
     function createVideoObject (bidRequest) {
-      if (isInstreamVideo(bidRequest)) {
+      if (hasInstreamVideo(bidRequest)) {
         const video = bidRequest.mediaTypes.video;
         return {
           ctx: video.context,
@@ -219,7 +219,7 @@ export const spec = {
     }
 
     function createBannerObject (bidRequest) {
-      return isBanner(bidRequest) ? {
+      return hasBanner(bidRequest) ? {
         siz: bannerBidSizes(bidRequest),
       } : undefined
     }

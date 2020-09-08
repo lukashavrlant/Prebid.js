@@ -563,6 +563,125 @@ describe('stroeerCore bid adapter', function () {
         assert.deepEqual(serverRequestInfo.data.bids[1].ban.siz, [[728, 90]]);
       });
 
+      describe('video bids', () => {
+        it('should be able build instream video bid', () => {
+          bidderRequest.bids = [{
+            bidId: 'bid1',
+            bidder: 'stroeerCore',
+            adUnitCode: 'div-1',
+            mediaTypes: {
+              video: {
+                context: 'instream',
+                playerSize: [640, 480],
+                mimes: ['video/mp4', 'video/quicktime']
+              }
+            },
+            params: {
+              sid: 'NDA='
+            },
+            userId: userIds
+          }];
+
+          const expectedBids =[{
+            'sid': 'NDA=',
+            'bid': 'bid1',
+            'viz': true,
+            'vid': {
+              'ctx': 'instream',
+              'siz': [640, 480],
+              'mim': ['video/mp4', 'video/quicktime']
+            }
+          }];
+
+          const serverRequestInfo = spec.buildRequests(bidderRequest.bids, bidderRequest);
+
+          const bids = JSON.parse(JSON.stringify(serverRequestInfo.data.bids));
+          assert.deepEqual(bids, expectedBids);
+        });
+
+        it('should exclude outstream video from multi-format bid', () => {
+          const multiFormatBid = {
+            bidId: 'bid1',
+            bidder: 'stroeerCore',
+            adUnitCode: 'div-1',
+            mediaTypes: {
+              video: {
+                context: 'outstream',
+                playerSize: [640, 480],
+                mimes: ['video/mp4', 'video/quicktime']
+              },
+              banner: {
+                sizes: [[300, 600], [160, 60]]
+              }
+            },
+            params: {
+              sid: 'ODA='
+            },
+            userId: userIds
+          }
+
+          bidderRequest.bids = [multiFormatBid];
+
+          const expectedBids =[{
+            'sid': 'ODA=',
+            'bid': 'bid1',
+            'viz': true,
+            'ban': {
+              'siz': [[300, 600], [160, 60]]
+            }
+          }];
+
+          const serverRequestInfo = spec.buildRequests(bidderRequest.bids, bidderRequest);
+
+          const bids = JSON.parse(JSON.stringify(serverRequestInfo.data.bids));
+          assert.deepEqual(bids, expectedBids);
+        });
+
+        it('should include instream video in multi-format bid', () => {
+          const multiFormatBid = {
+            bidId: 'bid1',
+            bidder: 'stroeerCore',
+            adUnitCode: 'div-1',
+            mediaTypes: {
+              video: {
+                context: 'instream',
+                playerSize: [640, 480],
+                mimes: ['video/mp4', 'video/quicktime']
+              },
+              banner: {
+                sizes: [[300, 600], [160, 60]]
+              }
+            },
+            params: {
+              sid: 'ODA='
+            },
+            userId: userIds
+          }
+
+          bidderRequest.bids = [multiFormatBid];
+
+          const expectedBids =[{
+            'sid': 'ODA=',
+            'bid': 'bid1',
+            'viz': true,
+            'ban': {
+              'siz': [[300, 600], [160, 60]]
+            },
+            'vid': {
+              'ctx': 'instream',
+              'siz': [640, 480],
+              'mim': ['video/mp4', 'video/quicktime']
+            }
+          }];
+
+          const serverRequestInfo = spec.buildRequests(bidderRequest.bids, bidderRequest);
+
+          const bids = JSON.parse(JSON.stringify(serverRequestInfo.data.bids));
+          assert.deepEqual(bids, expectedBids);
+        });
+
+      });
+
       describe('optional fields', () => {
         it('should use ssat value from config', () => {
           const bidReq = buildBidderRequest();
