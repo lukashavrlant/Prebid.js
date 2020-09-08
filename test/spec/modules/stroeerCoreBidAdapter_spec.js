@@ -354,21 +354,70 @@ describe('stroeerCore bid adapter', function () {
       assert.isFalse(spec.isBidRequestValid(bidRequest));
     });
 
-    it('should allow outstream video bids', () => {
+    it('should allow instream video bids', () => {
+      delete bidRequest.mediaTypes.banner;
+      bidRequest.mediaTypes.video = {
+        playerSize: [640, 480],
+        context: 'instream'
+      };
+
+      assert.isTrue(spec.isBidRequestValid(bidRequest));
+    });
+
+    it('should exclude outstream video bids', () => {
       delete bidRequest.mediaTypes.banner;
       bidRequest.mediaTypes.video = {
         playerSize: [640, 480],
         context: 'outstream'
       };
 
-      assert.isTrue(spec.isBidRequestValid(bidRequest));
+      assert.isFalse(spec.isBidRequestValid(bidRequest));
     });
 
-    it('should exclude instream video bids', () => {
-      delete bidRequest.mediaTypes.banner;
+    it('should allow multi-format bid that has banner and instream video', () => {
+      assert.isTrue('banner' in bidRequest.mediaTypes);
+
+      // Allowed because instream video component of the bid will be ignored in buildRequest()
       bidRequest.mediaTypes.video = {
         playerSize: [640, 480],
         context: 'instream'
+      };
+
+      assert.isTrue(spec.isBidRequestValid(bidRequest))
+    });
+
+    it('should exclude multi-format bid that has no format of interest', () => {
+      bidRequest.mediaTypes = {
+        video: {
+          playerSize: [640, 480],
+          context: 'outstream'
+        },
+        native: {
+          image: {
+            required: true,
+            sizes: [150, 50]
+          },
+          title: {
+            required: true,
+            len: 80
+          },
+          sponsoredBy: {
+            required: true
+          },
+          clickUrl: {
+            required: true
+          },
+          privacyLink: {
+            required: false
+          },
+          body: {
+            required: true
+          },
+          icon: {
+            required: true,
+            sizes: [50, 50]
+          }
+        }
       };
 
       assert.isFalse(spec.isBidRequestValid(bidRequest));

@@ -143,13 +143,13 @@ export const spec = {
         bidReq.mediaType === BANNER;
     }
 
-    function isOutstreamVideo(bidReq) {
+    function isInstreamVideo(bidReq) {
       const mediaTypes = bidReq.mediaTypes;
-      return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'outstream';
+      return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'instream';
     }
 
     function isValidMediaType(bidReq) {
-      return isBanner(bidReq) || isOutstreamVideo(bidReq);
+      return isBanner(bidReq) || isInstreamVideo(bidReq);
     }
 
     validators.push(createValidator((bidReq) => isValidMediaType(bidReq),
