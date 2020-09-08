@@ -119,6 +119,17 @@ function initUserConnect() {
   utils.insertElement(scriptElement);
 }
 
+function isBanner(bidReq) {
+  return (!bidReq.mediaTypes && !bidReq.mediaType) ||
+    (bidReq.mediaTypes && bidReq.mediaTypes.banner) ||
+    bidReq.mediaType === BANNER;
+}
+
+function isInstreamVideo(bidReq) {
+  const mediaTypes = bidReq.mediaTypes;
+  return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'instream';
+}
+
 export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER, VIDEO],
@@ -136,17 +147,6 @@ export const spec = {
         }
       }
     };
-
-    function isBanner(bidReq) {
-      return (!bidReq.mediaTypes && !bidReq.mediaType) ||
-        (bidReq.mediaTypes && bidReq.mediaTypes.banner) ||
-        bidReq.mediaType === BANNER;
-    }
-
-    function isInstreamVideo(bidReq) {
-      const mediaTypes = bidReq.mediaTypes;
-      return mediaTypes && mediaTypes.video && mediaTypes.video.context === 'instream';
-    }
 
     function isValidMediaType(bidReq) {
       return isBanner(bidReq) || isInstreamVideo(bidReq);
@@ -202,13 +202,35 @@ export const spec = {
       };
     }
 
-    function bidSizes(bid) {
+    function bannerBidSizes(bid) {
       return utils.deepAccess(bid, 'mediaTypes.banner.sizes') || bid.sizes /* for prebid < 3 */ || [];
     }
 
-    validBidRequests.forEach(bid => {
+    function createVideoObject (bidRequest) {
+      if (isInstreamVideo(bidRequest)) {
+        const video = bidRequest.mediaTypes.video;
+        return {
+          ctx: video.context,
+          siz: video.playerSize,
+          mim: video.mimes
+        }
+      }
+      return undefined;
+    }
+
+    function createBannerObject (bidRequest) {
+      return isBanner(bidRequest) ? {
+        siz: bannerBidSizes(bidRequest),
+      } : undefined
+    }
+
+    validBidRequests.forEach(bidRequest => {
       payload.bids.push({
-        bid: bid.bidId, sid: bid.params.sid, siz: bidSizes(bid), viz: elementInView(bid.adUnitCode)
+        bid: bidRequest.bidId,
+        sid: bidRequest.params.sid,
+        viz: elementInView(bidRequest.adUnitCode),
+        vid: createVideoObject(bidRequest),
+        ban: createBannerObject(bidRequest)
       });
     });
 

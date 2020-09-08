@@ -529,9 +529,19 @@ describe('stroeerCore bid adapter', function () {
           'ssat': 2,
           'yl2': false,
           'bids': [{
-            'sid': 'NDA=', 'bid': 'bid1', 'siz': [[300, 600], [160, 60]], 'viz': true
+            'sid': 'NDA=',
+            'bid': 'bid1',
+            'viz': true,
+            'ban': {
+              'siz': [[300, 600], [160, 60]]
+            }
           }, {
-            'sid': 'ODA=', 'bid': 'bid2', 'siz': [[728, 90]], 'viz': true
+            'sid': 'ODA=',
+            'bid': 'bid2',
+            'viz': true,
+            'ban': {
+              'siz': [[728, 90]]
+            }
           }],
           'user': {
             'euids': userIds
@@ -549,8 +559,8 @@ describe('stroeerCore bid adapter', function () {
         // We can support backwards compatibility with version 2.x
         const bidReq = buildBidderRequestPreVersion3();
         const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
-        assert.deepEqual(serverRequestInfo.data.bids[0].siz, [[300, 600], [160, 60]]);
-        assert.deepEqual(serverRequestInfo.data.bids[1].siz, [[728, 90]]);
+        assert.deepEqual(serverRequestInfo.data.bids[0].ban.siz, [[300, 600], [160, 60]]);
+        assert.deepEqual(serverRequestInfo.data.bids[1].ban.siz, [[728, 90]]);
       });
 
       describe('optional fields', () => {
